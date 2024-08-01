@@ -98,6 +98,7 @@ export const App = () => {
 
             <Categories
               categories={categoriesFromServer}
+              choseCategory={category}
               filterByCategory={categoryName => setCategory(categoryName)}
             />
 
