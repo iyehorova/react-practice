@@ -1,7 +1,14 @@
-export const Filters = ({ users, filterByUser }) => {
+import cn from 'classnames';
+
+export const Filters = ({ users, selectedUser, filterByUser }) => {
   return (
     <p className="panel-tabs has-text-weight-bold">
-      <a data-cy="FilterAllUsers" href="#/" onClick={() => filterByUser('all')}>
+      <a
+        data-cy="FilterAllUsers"
+        href="#/"
+        onClick={() => filterByUser(null)}
+        className={cn({ 'is-active': !selectedUser })}
+      >
         All
       </a>
       {users.map(user => (
@@ -10,21 +17,11 @@ export const Filters = ({ users, filterByUser }) => {
           key={user.name}
           href="#/"
           onClick={() => filterByUser(user.name)}
+          className={cn({ 'is-active': selectedUser === user.name })}
         >
           {user.name}
         </a>
       ))}
-      {/* <a data-cy="FilterUser" href="#/">
-        User 1
-      </a>
-
-      <a data-cy="FilterUser" href="#/" className="is-active">
-        User 2
-      </a>
-
-      <a data-cy="FilterUser" href="#/">
-        User 3
-      </a> */}
     </p>
   );
 };

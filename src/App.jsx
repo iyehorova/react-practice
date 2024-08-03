@@ -8,6 +8,8 @@ import productsFromServer from './api/products';
 import { ProductTable } from './Components/ProductTable';
 import { Filters } from './Components/Filters';
 import { Categories } from './Components/Categories';
+import { Search } from './Components/Search/Search';
+import { ResetButton } from './Components/ResetButton';
 
 const products = productsFromServer.map(product => {
   const category =
@@ -21,18 +23,19 @@ const getVisibleProducts = ({
   filterByUser,
   filterByCategory,
   searchItems,
+  sortField,
 }) => {
   let prods = [...products];
 
-  if (filterByUser !== 'all') {
+  if (filterByUser) {
     prods = prods.filter(item => {
       return item.user.name === filterByUser;
     });
   }
 
-  if (filterByCategory !== 'all') {
+  if (filterByCategory.length) {
     prods = prods.filter(item => {
-      return item.category.title === filterByCategory;
+      return filterByCategory.includes(item.category.title);
     });
   }
 
@@ -44,18 +47,66 @@ const getVisibleProducts = ({
     });
   }
 
+  if (sortField.field) {
+    prods.sort((p1, p2) => {
+      let result = null;
+
+      switch (sortField.field) {
+        case 'ID':
+          result = p1.id - p2.id;
+          break;
+
+        case 'Product':
+          result = p1.name.localeCompare(p2.name);
+          break;
+
+        case 'Category':
+          result = p1.category.title.localeCompare(p2.category.title);
+          break;
+
+        case 'User':
+          result = p1.user.name.localeCompare(p2.user.name);
+          break;
+
+        default:
+          return 0;
+      }
+
+      return sortField.direct === 'asc' ? result : result * -1;
+    });
+  }
+
   return prods;
 };
 
+export const userInitialState = null;
+export const categoriesInitialState = [];
+export const sortFieldInitialState = { field: '', direct: '' };
+
 export const App = () => {
-  const [user, setUser] = useState('all');
-  const [category, setCategory] = useState('all');
+  const [user, setUser] = useState(userInitialState);
+  const [categories, setCategories] = useState(categoriesInitialState);
   const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState(sortFieldInitialState);
+
   const visibleProducts = getVisibleProducts({
     filterByUser: user,
-    filterByCategory: category,
+    filterByCategory: categories,
     searchItems: search,
+    sortField,
   });
+
+  const handleCategoryFilters = (categoryName, status = 'add') => {
+    if (!categoryName.length) {
+      return setCategories(categoriesInitialState);
+    }
+
+    if (status === 'remove') {
+      return setCategories(prev => prev.filter(item => item !== categoryName));
+    }
+
+    return setCategories(prev => [...prev, categoryName]);
+  };
 
   return (
     <div className="section">
@@ -66,55 +117,24 @@ export const App = () => {
           <nav className="panel">
             <Filters
               users={usersFromServer}
+              selectedUser={user}
               filterByUser={chooseUser => setUser(chooseUser)}
             />
 
-            <div className="panel-block">
-              <p className="control has-icons-left has-icons-right">
-                <input
-                  data-cy="SearchField"
-                  type="text"
-                  className="input"
-                  placeholder="Search"
-                  value={search}
-                  onChange={event => setSearch(event.target.value)}
-                />
-
-                <span className="icon is-left">
-                  <i className="fas fa-search" aria-hidden="true" />
-                </span>
-
-                <span className="icon is-right">
-                  {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                  <button
-                    data-cy="ClearButton"
-                    type="button"
-                    className="delete"
-                    onClick={() => setSearch('')}
-                  />
-                </span>
-              </p>
-            </div>
+            <Search query={search} getQuery={query => setSearch(query)} />
 
             <Categories
               categories={categoriesFromServer}
-              choseCategory={category}
-              filterByCategory={categoryName => setCategory(categoryName)}
+              choseCategories={categories}
+              filterByCategory={handleCategoryFilters}
             />
 
-            <div className="panel-block">
-              <a
-                data-cy="ResetAllButton"
-                href="#/"
-                className="button is-link is-outlined is-fullwidth"
-                onClick={() => {
-                  setUser('all');
-                  setCategory('all');
-                }}
-              >
-                Reset all filters
-              </a>
-            </div>
+            <ResetButton
+              makeAllClear={() => {
+                setUser(userInitialState);
+                setCategories(categoriesInitialState);
+              }}
+            />
           </nav>
         </div>
 
@@ -124,7 +144,13 @@ export const App = () => {
               No products matching selected criteria
             </p>
           ) : (
-            <ProductTable products={visibleProducts} />
+            <ProductTable
+              products={visibleProducts}
+              selectedField={sortField}
+              changeSortField={(field, direct) =>
+                setSortField({ field, direct })
+              }
+            />
           )}
         </div>
       </div>

@@ -1,13 +1,19 @@
 import cn from 'classnames';
 
-export const Categories = ({ categories, choseCategory, filterByCategory }) => {
+export const Categories = ({
+  categories,
+  choseCategories,
+  filterByCategory,
+}) => {
   return (
     <div className="panel-block is-flex-wrap-wrap">
       <a
         href="#/"
         data-cy="AllCategories"
-        className="button is-success mr-6 is-outlined"
-        onClick={() => filterByCategory('all')}
+        className={cn('button is-success mr-6', {
+          'is-outlined': choseCategories.length > 0,
+        })}
+        onClick={() => filterByCategory([])}
       >
         All
       </a>
@@ -16,10 +22,16 @@ export const Categories = ({ categories, choseCategory, filterByCategory }) => {
           data-cy="Category"
           key={category.title}
           className={cn('button mr-2 my-1', {
-            'is-info': choseCategory === category.title,
+            'is-info': choseCategories.includes(category.title),
           })}
           href="#/"
-          onClick={() => filterByCategory(category.title)}
+          onClick={() => {
+            if (choseCategories.includes(category.title)) {
+              return filterByCategory(category.title, 'remove');
+            }
+
+            return filterByCategory(category.title, 'add');
+          }}
         >
           {category.title}
         </a>
